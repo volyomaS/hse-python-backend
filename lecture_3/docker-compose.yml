@@ -1,38 +1,47 @@
 version: "3"
 
 services:
-  dev:
-    image: python-backend-lecture-3-dev:latest
+  store-backend:
     build:
       context: .
-      dockerfile: ./docker/demo_service/Dockerfile
-      target: dev
-    restart: always
-
-  local:
-    image: python-backend-lecture-3-local:latest
-    build:
-      context: .
-      dockerfile: ./docker/demo_service/Dockerfile
-      target: local
+      dockerfile: ./docker/store_service/Dockerfile
     restart: always
     ports:
       - 8080:8080
-
-  grafana:
-    image: grafana/grafana:latest
-    ports:
-      - 3000:3000
+    networks:
+      - base
+    expose:
+      - 8080
 
   prometheus:
     image: prom/prometheus
     volumes:
       - ./settings/prometheus/:/etc/prometheus/
     command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--config.file=/etc/prometheus/prometheus-store.yaml"
       - "--storage.tsdb.path=/prometheus"
       - "--web.console.libraries=/usr/share/prometheus/console_libraries"
       - "--web.console.templates=/usr/share/prometheus/consoles"
     ports:
       - 9090:9090
+    expose:
+      - 9090
+    networks:
+      - base
+    depends_on:
+      - store-backend
     restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    depends_on:
+      - prometheus
+      - store-backend
+    networks:
+      - base
+
+networks:
+  base:
+    driver: bridge

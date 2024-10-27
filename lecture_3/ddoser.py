@@ -1,4 +1,5 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import json
+from random import randint, random
 
 import requests
 from faker import Faker
@@ -6,39 +7,40 @@ from faker import Faker
 faker = Faker()
 
 
-def create_users():
+def create_items() -> list[int]:
+    ids = []
     for _ in range(500):
-        user = faker.profile()
+        rand_id = randint(0, 100000)
         response = requests.post(
-            "http://localhost:8080/create-user",
+            "http://localhost:8080/item",
             json={
-                "username": user["username"],
-                "first_name": user["name"],
-                "last_name": "",
+                "name": f"item{rand_id}",
+                "price": random(),
             },
         )
+        ids.append(json.loads(response.text)['id'])
+        print(response.status_code, response.text)
+    return ids
 
-        print(response)
 
-
-def get_users():
-    for _ in range(500):
-        
-        response = requests.post(
-            "http://localhost:8080/get-user",
-            params={"id": faker.random_number(digits=2)},
+def get_items_exists(ids: list[int]):
+    for rand_id in ids:
+        response = requests.get(
+            f"http://localhost:8080/item/{rand_id}"
         )
-        print(response)
+        print(response.status_code, response.text)
 
 
-with ThreadPoolExecutor() as executor:
-    futures = {}
+def get_items_non_exists(ids: list[int]):
+    max_id = max(ids)
+    for rand_id in range(max_id, max_id + 500):
+        response = requests.get(
+            f"http://localhost:8080/item/{rand_id}"
+        )
+        print(response.status_code, response.text)
 
-    for i in range(15):
-        futures[executor.submit(create_users)] = f"create-user-{i}"
 
-    for _ in range(15):
-        futures[executor.submit(get_users)] = f"get-users-{i}"
-
-    for future in as_completed(futures):
-        print(f"completed {futures[future]}")
+if __name__ == '__main__':
+    rand_ids = create_items()
+    get_items_exists(rand_ids)
+    get_items_non_exists(rand_ids)
