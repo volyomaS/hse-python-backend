@@ -2,9 +2,6 @@ import json
 from random import randint, random
 
 import requests
-from faker import Faker
-
-faker = Faker()
 
 
 def create_items() -> list[int]:
